@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum PrivacyLevel {
+  DRAFT
+  CLASS
+  CAMPUS
+  PUBLIC
+}
+
+model User {
+  id             String       @id @default(uuid()) @db.Uuid
+  email          String       @unique
+  passwordHash   String
+  role           Role         @default(STUDENT)
+  name           String
+  username       String       @unique
+  profilePicture String?
+  bio            String?
+  skills         String[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  followers      Follow[]     @relation("UserFollowers")
+  following      Follow[]     @relation("UserFollowing")
+  coursesTaught  Course[]     @relation("CourseTeacher")
+  enrollments    Enrollment[]
+  projects       Project[]
+  comments       Comment[]
+  schedules      Schedule[]
+  grades         Grade[]
+  attendance     Attendance[]
+}
+
+model Follow {
+  followerId  String   @db.Uuid
+  followingId String   @db.Uuid
+  createdAt   DateTime @default(now())
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+}
+
+model Course {
+  id          String       @id @default(uuid()) @db.Uuid
+  courseCode  String       @unique
+  name        String
+  teacherId   String       @db.Uuid
+  createdAt   DateTime     @default(now())
+  teacher     User         @relation("CourseTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  enrollments Enrollment[]
+  broadcasts  Broadcast[]
+  schedules   Schedule[]
+  grades      Grade[]
+}
+
+model Enrollment {
+  id         String   @id @default(uuid()) @db.Uuid
+  studentId  String   @db.Uuid
+  courseId   String   @db.Uuid
+  enrolledAt DateTime @default(now())
+  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+}
+
+model Project {
+  id           String       @id @default(uuid()) @db.Uuid
+  authorId     String       @db.Uuid
+  title        String
+  description  String
+  tags         String[]
+  privacyLevel PrivacyLevel @default(CAMPUS)
+  starsCount   Int          @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  author       User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments     Comment[]
+}
+
+model Comment {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @db.Uuid
+  authorId  String   @db.Uuid
+  content   String
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Broadcast {
+  id        String   @id @default(uuid()) @db.Uuid
+  courseId  String   @db.Uuid
+  title     String
+  content   String
+  fileUrl   String?
+  createdAt DateTime @default(now())
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model Schedule {
+  id         String @id @default(uuid()) @db.Uuid
+  studentId  String @db.Uuid
+  courseId   String @db.Uuid
+  dayOfWeek  Int
+  startTime  String
+  endTime    String
+  location   String
+  student    User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model Grade {
+  id        String   @id @default(uuid()) @db.Uuid
+  studentId String   @db.Uuid
+  courseId  String   @db.Uuid
+  title     String
+  score     Float
+  maxScore  Float
+  createdAt DateTime @default(now())
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model Attendance {
+  id         String   @id @default(uuid()) @db.Uuid
+  studentId  String   @db.Uuid
+  date       DateTime @db.Date
+  percentage Float
+  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
