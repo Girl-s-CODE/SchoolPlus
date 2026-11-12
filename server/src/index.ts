@@ -2,10 +2,16 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import express from 'express';
 import { prisma } from './utils/prisma';
+import { createServer } from 'node:http';
+import { initializeSocket } from './services/socket';
+
 
 dotenv.config({ path: '../.env' });
 
+
 const app = express();
+const httpServer = createServer(app);
+
 app.use(cors());
 app.use(express.json());
 app.get('/health', (_request, response) => response.json({ status: 'ok' }));
@@ -16,7 +22,12 @@ async function start() {
   try {
     await prisma.$connect();
     console.log('📦 Successfully connected to PostgreSQL via Prisma.');
-    app.listen(port, () => console.log(`School Plus API listening on port ${port}.`));
+
+    initializeSocket(httpServer);
+
+    httpServer.listen(port, () => {
+      console.log(`School Plus API listening on port ${port}.`);
+    });
   } catch (error) {
     console.error('Unable to connect to PostgreSQL:', error);
     process.exit(1);
