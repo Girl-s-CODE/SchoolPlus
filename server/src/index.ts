@@ -1,3 +1,4 @@
+import projectRoutes from './routes/projectRoutes';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import express from 'express';
@@ -14,6 +15,7 @@ const httpServer = createServer(app);
 
 app.use(cors());
 app.use(express.json());
+app.use('/api/projects', projectRoutes);
 app.get('/health', (_request, response) => response.json({ status: 'ok' }));
 
 const port = Number(process.env.PORT ?? 5000);
